@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Профиль — Фотобот</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F6F8FA; --surface: #FFFFFF; --surface2: #F9FAFB;
+    --border: #E5E7EB; --border2: #D1D5DB;
+    --accent: #635BFF; --accent2: #7A73FF;
+    --accent-glow: rgba(99,91,255,0.12); --accent-light: #ECECFD;
+    --text: #1A1F36; --text2: #3C4257;
+    --muted: #697386; --muted2: #A3ACB9;
+    --green: #09825D; --green-light: #CBFFE3;
+    --red: #C0123C; --red-light: #FFE8EF;
+    --orange: #B35309; --orange-light: #FEF3C7;
+    --blue: #1A56DB; --blue-light: #E1EFFE;
+    --sidebar-bg: #0B1020; --sidebar-text: #8EA2B8; --topbar-bg: #0B1020;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Montserrat', sans-serif; font-size: 13px; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ─── TOPBAR ─── */
+  .topbar { background: var(--topbar-bg); height: 56px; display: flex; align-items: center; padding: 0 24px; gap: 32px; position: sticky; top: 0; z-index: 100; flex-shrink: 0; border-bottom: 1px solid rgba(123,97,255,0.2); }
+  .topbar-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; flex-shrink: 0; }
+  .topbar-logo-text { font-family: 'Unbounded', sans-serif; font-size: 0.85rem; font-weight: 700; color: #fff; letter-spacing: 0.08em; }
+  .topbar-nav { display: flex; gap: 2px; flex: 1; justify-content: center; }
+  .topbar-nav a { color: rgba(255,255,255,0.55); text-decoration: none; font-size: 0.82rem; font-weight: 500; padding: 6px 12px; border-radius: 6px; transition: all 0.2s; }
+  .topbar-nav a:hover { color: #fff; background: rgba(255,255,255,0.07); }
+  .topbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .balance-chip { background: rgba(99,91,255,0.2); border: 1.5px solid rgba(99,91,255,0.4); border-radius: 20px; padding: 5px 14px; font-family: 'Montserrat', sans-serif; font-size: 0.82rem; font-weight: 700; color: #C7C4FF; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+  .balance-chip::before { content: '₽'; font-size: 0.7rem; opacity: 0.8; }
+  .balance-chip:hover { border-color: var(--accent); background: #312E81; color: #fff; }
+  .lang-btn { display: flex; align-items: center; gap: 5px; color: rgba(255,255,255,0.55); font-size: 0.72rem; cursor: pointer; padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); transition: all 0.2s; }
+  .lang-btn:hover { border-color: rgba(255,255,255,0.3); color: #fff; }
+  .lang-dropdown { position: relative; }
+  .lang-menu { position: absolute; top: calc(100% + 8px); right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 200; display: none; min-width: 160px; padding: 6px 0; overflow: hidden; }
+  .lang-menu.open { display: block; }
+  .lang-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; font-size: 0.82rem; color: var(--text2); cursor: pointer; transition: background 0.15s; font-family: 'Montserrat', sans-serif; }
+  .lang-item:hover { background: var(--surface2); }
+  .lang-item.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+  #lang-arrow { transition: transform 0.2s; }
+  .lang-btn.open #lang-arrow { transform: rotate(180deg); }
+
+  /* ─── LAYOUT ─── */
+  .layout { display: flex; flex: 1; min-height: calc(100vh - 56px); align-items: stretch; }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar { width: 220px; min-width: 220px; background: var(--sidebar-bg); flex-shrink: 0; display: flex; flex-direction: column; position: sticky; top: 56px; height: calc(100vh - 56px); overflow: hidden; border-right: 1px solid rgba(123,97,255,0.1); transition: width 0.3s ease, min-width 0.3s ease; }
+  .sidebar.collapsed { width: 0 !important; min-width: 0 !important; }
+  .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 1px; padding: 8px 8px 0; overflow-y: auto; overflow-x: hidden; min-height: 0; }
+  .sidebar-item { display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 8px; color: var(--sidebar-text); text-decoration: none; font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: all 0.18s; position: relative; }
+  .sidebar-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .sidebar-item.active { background: rgba(99,91,255,0.25); color: #fff; border: 1px solid rgba(99,91,255,0.3); }
+  .sidebar-item.active .s-icon { color: var(--accent2); }
+  .s-icon { width: 15px; height: 15px; flex-shrink: 0; color: rgba(160,168,192,0.6); transition: color 0.2s; }
+  .sidebar-item:hover .s-icon { color: rgba(255,255,255,0.8); }
+  .sidebar-badge { margin-left: auto; background: var(--red); color: #fff; border-radius: 10px; padding: 1px 6px; font-size: 0.6rem; font-weight: 700; }
+  .s-divider { height: 1px; background: rgba(255,255,255,0.08); margin: 8px; }
+  .sidebar-bottom { padding: 0 8px 8px; display: flex; flex-direction: column; gap: 1px; flex-shrink: 0; }
+  .disk-widget { padding: 10px 12px; background: rgba(255,255,255,0.03); border-radius: 8px; margin: 4px 0; border: 1px solid rgba(255,255,255,0.05); }
+  .disk-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .disk-label { font-size: 0.62rem; color: var(--sidebar-text); text-transform: uppercase; letter-spacing: 0.06em; }
+  .disk-value { font-size: 0.62rem; color: #4ade80; font-weight: 700; }
+  .disk-track { height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
+  .disk-fill { height: 100%; width: 36%; background: linear-gradient(90deg, #7B61FF, #4ade80); border-radius: 3px; }
+  .sidebar-item.instr-primary { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: rgba(255,255,255,0.9); margin-bottom: 4px; align-items: flex-start; padding: 10px 12px; position: relative; }
+  .sidebar-item.instr-primary:hover { background: rgba(16,185,129,0.22); }
+  .sidebar-item.instr-primary .s-icon { color: #6EE7B7; margin-top: 2px; }
+  .instr-badge { position: absolute; top: 7px; right: 8px; width: 16px; height: 16px; border-radius: 50%; background: #10B981; color: #fff; font-size: 0.6rem; font-weight: 900; display: flex; align-items: center; justify-content: center; animation: blink 1.8s infinite; }
+  .instr-hint { font-size: 0.6rem; color: rgba(110,231,183,0.7); margin-top: 2px; }
+  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+  .sidebar-item.ai-agent { align-items: flex-start; padding: 10px 12px; background: rgba(99,91,255,0.12); border: 1px solid rgba(99,91,255,0.25); color: rgba(255,255,255,0.9); margin-bottom: 6px; position: relative; }
+  .sidebar-item.ai-agent .s-icon { color: var(--accent2); margin-top: 2px; }
+  .ai-pulse { position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: #4ade80; animation: blink 1.5s infinite; box-shadow: 0 0 6px rgba(74,222,128,0.6); }
+  .ai-text { display: flex; align-items: center; gap: 6px; }
+  .ai-live { background: rgba(123,97,255,0.6); color: #fff; font-size: 0.55rem; font-weight: 700; padding: 1px 5px; border-radius: 4px; }
+  .ai-hint { font-size: 0.6rem; color: rgba(159,143,255,0.6); margin-top: 2px; }
+  .sidebar-item.logout { color: rgba(255,255,255,0.25); }
+  .sidebar-item.logout:hover { color: #FCA5A5; background: rgba(239,68,68,0.08); }
+
+  /* ─── SIDEBAR TOGGLE ─── */
+  .sidebar-toggle { position: fixed; top: calc(56px + 80px); left: 220px; width: 20px; height: 52px; border-radius: 0 8px 8px 0; background: #312E81; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 300; transition: left 0.3s ease, background 0.2s; color: #fff; }
+  .sidebar-toggle:hover { background: #1E1B4B; }
+
+  /* ─── MAIN ─── */
+  .main { flex: 1; overflow: auto; min-width: 0; background: var(--bg); padding: 24px 28px 40px; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:none;} }
+
+  /* ══════════════════════════
+     PROFILE GRID LAYOUT
+  ══════════════════════════ */
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 20px;
+    align-items: start;
+    animation: fadeUp 0.28s ease;
+  }
+
+  /* ─── CARD BASE ─── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 18px 22px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.88rem; font-weight: 700;
+    color: var(--text);
+  }
+  .card-body { padding: 20px 22px; }
+
+  /* ══════════════════════════
+     PROFILE CARD
+  ══════════════════════════ */
+  .profile-avatar-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 24px 22px 20px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .avatar {
+    width: 88px; height: 88px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #312E81, #4C1D95);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    border: 3px solid rgba(99,91,255,0.3);
+    flex-shrink: 0;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .avatar svg { color: rgba(255,255,255,0.7); }
+
+  .avatar-upload {
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 26px; height: 26px;
+    background: var(--accent);
+    border-radius: 50%;
+    border: 2px solid var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: background 0.18s;
+    color: #fff;
+  }
+  .avatar-upload:hover { background: var(--accent2); }
+
+  .profile-name {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 1rem; font-weight: 700;
+    color: var(--text);
+    text-align: center;
+  }
+
+  /* ─── Profile rows ─── */
+  .profile-rows { padding: 4px 0; }
+
+  .profile-row {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    align-items: center;
+    padding: 12px 22px;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+    min-height: 48px;
+  }
+  .profile-row:last-child { border-bottom: none; }
+
+  .row-label {
+    font-size: 0.78rem; font-weight: 600;
+    color: var(--text2);
+    flex-shrink: 0;
+  }
+
+  .row-value {
+    font-size: 0.82rem; color: var(--text);
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .row-value.muted { color: var(--muted); }
+
+  /* Discount badge */
+  .discount-badge {
+    background: var(--red);
+    color: #fff;
+    font-size: 0.65rem; font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.02em;
+  }
+
+  /* City tag */
+  .city-tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 4px 12px;
+    font-size: 0.78rem; font-weight: 500;
+    color: var(--text2);
+  }
+
+  /* Disk bar */
+  .disk-row {
+    display: flex; align-items: center; gap: 10px;
+    flex: 1;
+  }
+  .disk-bar-wrap { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .disk-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #4ade80); border-radius: 3px; transition: width 0.4s; }
+  .disk-num { font-size: 0.72rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+  .disk-info-btn { width: 16px; height: 16px; border-radius: 50%; background: var(--accent-light); border: none; color: var(--accent); font-size: 0.65rem; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+
+  /* Profile edit btn */
+  .profile-edit-wrap {
+    padding: 18px 22px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: center;
+  }
+
+  /* ══════════════════════════
+     SECURITY CARD
+  ══════════════════════════ */
+  .form-group { margin-bottom: 14px; }
+  .form-group:last-of-type { margin-bottom: 0; }
+
+  .form-input {
+    width: 100%;
+    height: 42px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 0 14px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.82rem;
+    color: var(--text);
+    background: var(--surface);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+  .form-input::placeholder { color: var(--muted2); }
+
+  .form-actions { margin-top: 18px; display: flex; justify-content: center; }
+
+  /* ══════════════════════════
+     BALANCE CARD
+  ══════════════════════════ */
+  .balance-card-body {
+    padding: 28px 22px 22px;
+    text-align: center;
+  }
+
+  .balance-amount {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 2.8rem; font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .balance-currency {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 1.4rem; font-weight: 700;
+    color: var(--accent2);
+    margin-top: 4px;
+    display: block;
+  }
+
+  .balance-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 20px;
+  }
+  .balance-actions .btn { width: 100%; }
+
+  /* ══════════════════════════
+     INFO / PORTFOLIO CARD
+  ══════════════════════════ */
+  .info-text {
+    font-size: 0.82rem; color: var(--text2);
+    line-height: 1.65;
+    margin-bottom: 14px;
+  }
+
+  .portfolio-empty {
+    text-align: center;
+    padding: 8px 0 4px;
+  }
+  .portfolio-empty-icon {
+    width: 44px; height: 44px;
+    background: var(--accent-light);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 10px;
+    color: var(--accent);
+  }
+  .portfolio-empty-text { font-size: 0.78rem; color: var(--muted); line-height: 1.5; margin-bottom: 14px; }
+
+  /* ══════════════════════════
+     REFERRAL CARD
+  ══════════════════════════ */
+  .referral-wrap {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+  }
+  .referral-code {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.88rem; font-weight: 700;
+    color: var(--text);
+    flex: 1;
+    letter-spacing: 0.08em;
+  }
+  .referral-copy {
+    height: 30px; padding: 0 12px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.72rem; font-weight: 600;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.18s;
+    display: flex; align-items: center; gap: 5px;
+    flex-shrink: 0;
+  }
+  .referral-copy:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .referral-hint { font-size: 0.72rem; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+
+  /* ══════════════════════════
+     BUTTONS
+  ══════════════════════════ */
+  .btn {
+    height: 38px; padding: 0 18px;
+    border-radius: 10px; border: none;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.78rem; font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4C1D95 100%);
+    color: #fff;
+    box-shadow: 0 3px 12px rgba(49,46,129,0.35);
+  }
+  .btn-primary:hover { background: linear-gradient(135deg, #312E81 0%, #4C1D95 100%); transform: translateY(-1px); box-shadow: 0 5px 16px rgba(49,46,129,0.45); }
+
+  .btn-green {
+    background: var(--green);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(9,130,93,0.3);
+  }
+  .btn-green:hover { background: #076b4d; transform: translateY(-1px); }
+
+  .btn-blue {
+    background: var(--blue);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(26,86,219,0.3);
+  }
+  .btn-blue:hover { background: #1447c0; transform: translateY(-1px); }
+
+  .btn-danger {
+    background: var(--red);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(192,18,60,0.3);
+  }
+  .btn-danger:hover { background: #a00f33; transform: translateY(-1px); }
+
+  .btn-secondary {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--text2);
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+  /* ── Modal ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(11,16,32,0.65); backdrop-filter: blur(4px); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; pointer-events: none; transition: opacity 0.22s; }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal { background: var(--surface); border-radius: 16px; width: 480px; max-width: 100%; box-shadow: 0 24px 64px rgba(0,0,0,0.2); overflow: hidden; transform: scale(0.96) translateY(8px); transition: transform 0.22s; }
+  .modal-overlay.open .modal { transform: scale(1) translateY(0); }
+  .modal-hd { padding: 18px 22px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .modal-title { font-family: 'Unbounded', sans-serif; font-size: 0.92rem; font-weight: 700; color: var(--text); }
+  .modal-close { width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.18s; }
+  .modal-close:hover { background: var(--surface2); color: var(--text); }
+  .modal-bd { padding: 18px 22px; }
+  .modal-ft { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+  .modal-form-group { margin-bottom: 14px; }
+  .modal-form-group label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+  .modal-input { width: 100%; height: 42px; border: 1.5px solid var(--border); border-radius: 10px; padding: 0 14px; font-family: 'Montserrat', sans-serif; font-size: 0.82rem; color: var(--text); background: var(--surface); outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+  .modal-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+  .modal-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ─── TOAST ─── */
+  .toast-wrap { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+  .toast { background: #1A1F36; color: #fff; border-radius: 10px; padding: 12px 18px; font-size: 0.82rem; font-family: 'Montserrat', sans-serif; font-weight: 500; display: flex; align-items: center; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.08); animation: toastIn 0.3s ease; pointer-events: all; min-width: 240px; }
+  @keyframes toastIn { from{opacity:0;transform:translateY(12px);} to{opacity:1;transform:none;} }
+  @keyframes toastOut { from{opacity:1;} to{opacity:0;transform:translateY(8px);} }
+  .toast-icon { width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .toast-icon.green { background: var(--green-light); color: var(--green); }
+  .toast-icon.blue  { background: var(--blue-light); color: var(--blue); }
+
+  /* ─── RESPONSIVE ─── */
+
+  /* 1440px+ — стандартный десктоп, всё по умолчанию */
+
+  /* 1280px — ноутбуки 13-14" */
+  @media (max-width: 1280px) {
+    .profile-grid { grid-template-columns: 1fr 300px; gap: 16px; }
+    .main { padding: 20px 22px 32px; }
+    .balance-amount { font-size: 2.4rem; }
+  }
+
+  /* 1100px — маленький ноут, iPad Pro горизонтально */
+  @media (max-width: 1100px) {
+    .sidebar { width: 192px; min-width: 192px; }
+    .sidebar-toggle { left: 192px; }
+    .profile-grid { grid-template-columns: 1fr 280px; gap: 14px; }
+    .profile-row { grid-template-columns: 110px 1fr; padding: 11px 18px; }
+    .card-body { padding: 16px 18px; }
+    .card-header { padding: 14px 18px 12px; }
+    .profile-edit-wrap { padding: 14px 18px; }
+    .balance-amount { font-size: 2.2rem; }
+    .referral-code { font-size: 0.8rem; }
+  }
+
+  /* 1024px — планшет горизонтально, сайдбар скрыт */
+  @media (max-width: 1024px) {
+    .sidebar { width: 0 !important; min-width: 0 !important; overflow: hidden; }
+    .sidebar-toggle { left: 0 !important; }
+    #toggle-arrow { transform: rotate(180deg); }
+    .sidebar.expanded { width: 220px !important; min-width: 220px !important; overflow: hidden; }
+    body.sidebar-expanded .sidebar-toggle { left: 220px !important; }
+    .topbar-nav { display: none; }
+    .topbar { justify-content: space-between; }
+    .main { padding: 16px 18px 28px; }
+    .profile-grid { grid-template-columns: 1fr 260px; gap: 14px; }
+    .balance-amount { font-size: 2rem; }
+    .balance-currency { font-size: 1.2rem; }
+  }
+
+  /* 900px — узкий планшет горизонтально */
+  @media (max-width: 900px) {
+    .profile-grid { grid-template-columns: 1fr 240px; }
+    .profile-row { grid-template-columns: 100px 1fr; padding: 10px 16px; }
+    .disk-num { display: none; }
+    .disk-num:first-child { display: block; }
+  }
+
+  /* 820px — планшет вертикально, переходим в одну колонку */
+  @media (max-width: 820px) {
+    .profile-grid { grid-template-columns: 1fr; }
+    .balance-amount { font-size: 2.8rem; }
+    .balance-currency { font-size: 1.4rem; }
+    .balance-actions { flex-direction: row; flex-wrap: wrap; }
+    .balance-actions .btn { flex: 1; min-width: 120px; }
+    .profile-row { grid-template-columns: 130px 1fr; }
+    .disk-num { display: block; }
+    .main { padding: 16px 16px 24px; }
+  }
+
+  /* 640px — маленький планшет / телефон горизонтально */
+  @media (max-width: 640px) {
+    .main { padding: 12px 12px 20px; }
+    .profile-row {
+      grid-template-columns: 1fr;
+      gap: 4px;
+      padding: 10px 16px;
+    }
+    .row-label { font-size: 0.7rem; color: var(--muted); }
+    .balance-actions { flex-direction: column; }
+    .balance-actions .btn { width: 100%; }
+    .modal-row2 { grid-template-columns: 1fr; }
+    .referral-wrap { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .referral-copy { width: 100%; justify-content: center; }
+    .disk-row { flex-wrap: wrap; }
+  }
+
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <a href="#" class="topbar-logo">
+    <svg width="26" height="23" viewBox="0 0 265 233" fill="none">
+      <path d="M0 0 C0 73.26 0 146.52 0 222 C-6.2 220.62 -12.03 219.13 -18.01 217.11 C-28.91 213.46 -53.06 205.38 -96 191 C-96 138.2 -96 85.4 -96 31 C-49.69 15.5 -29.17 8.63 0 0 Z" fill="#fff" transform="translate(259,6)"/>
+      <path d="M0 0 C0 73.26 0 146.52 0 222 C-10.88 218.24 -22.01 212.65 -48.47 199.37 C-57.64 194.76 -64 191 -64 191 C-64 138.2 -64 85.4 -64 31 C-34.06 15.43 -17.27 6.98 0 0 Z" fill="#fff" transform="translate(132,6)"/>
+      <path d="M0 0 C0 73.26 0 146.52 0 222 C-14 215 -26.78 205.93 -33 191 C-39.09 168.15 -36.93 100.1 -21.74 14.45 C-6.49 0 0 0 0 0 Z" fill="#fff" transform="translate(37,6)"/>
+    </svg>
+    <span class="topbar-logo-text">ФОТОБОТ</span>
+  </a>
+  <nav class="topbar-nav">
+    <a href="#">Главная</a><a href="#">Стоимость</a><a href="#">Поддержка</a><a href="#">Аккаунт</a><a href="#">Панель управления</a>
+  </nav>
+  <div class="topbar-right">
+    <div class="balance-chip">2 748.41</div>
+    <div class="lang-dropdown" id="lang-dropdown">
+      <div class="lang-btn" onclick="toggleLang()">
+        <span id="lang-flag">🇷🇺</span><span id="lang-code">RU</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="lang-arrow"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="lang-menu" id="lang-menu">
+        <div class="lang-item active" onclick="selectLang('🇷🇺','RU',event)">🇷🇺 Русский</div>
+        <div class="lang-item" onclick="selectLang('🇬🇧','EN',event)">🇬🇧 English</div>
+        <div class="lang-item" onclick="selectLang('🇵🇱','PL',event)">🇵🇱 Polski</div>
+        <div class="lang-item" onclick="selectLang('🇺🇦','UA',event)">🇺🇦 Українська</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <nav class="sidebar-nav">
+    <a href="#" class="sidebar-item"><svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Заказы</a>
+    <a href="#" class="sidebar-item"><svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Мои шаблоны</a>
+    <a href="#" class="sidebar-item"><svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>Библиотека шаблонов</a>
+    <a href="#" class="sidebar-item"><svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Альбомы со мной</a>
+    <a href="#" class="sidebar-item"><svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.1 2.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.18 6.18l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>Приём заказов</a>
+    <a href="#" class="sidebar-item"><svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Размеры печати</a>
+    <a href="#" class="sidebar-item"><svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Примеры разворотов</a>
+    <div class="s-divider"></div>
+    <a href="#" class="sidebar-item active"><svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Профиль</a>
+    <a href="#" class="sidebar-item"><svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Уведомления<span class="sidebar-badge">3</span></a>
+    <a href="#" class="sidebar-item"><svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>Корзина</a>
+  </nav>
+  <div class="s-divider"></div>
+  <div class="sidebar-bottom">
+    <a href="#" class="sidebar-item instr-primary">
+      <div class="instr-badge">!</div>
+      <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      <div><div>Инструкция</div><div class="instr-hint">Начните здесь 👆</div></div>
+    </a>
+    <a href="#" class="sidebar-item ai-agent">
+      <div class="ai-pulse"></div>
+      <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a2 2 0 012 2v1a7 7 0 010 14v1a2 2 0 01-4 0v-1a7 7 0 010-14V4a2 2 0 012-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      <div><span class="ai-text">Помощь <span class="ai-live">24/7</span></span><div class="ai-hint">Если не нашли в инструкции</div></div>
+    </a>
+    <div class="s-divider" style="margin-top:8px;"></div>
+    <div class="disk-widget">
+      <div class="disk-top"><span class="disk-label">Диск</span><span class="disk-value">3.2 / 50 GB</span></div>
+      <div class="disk-track"><div class="disk-fill"></div></div>
+    </div>
+    <a href="#" class="sidebar-item logout"><svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Выход</a>
+  </div>
+</aside>
+
+<button class="sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()">
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="toggle-arrow"><polyline points="15 18 9 12 15 6"/></svg>
+</button>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="profile-grid">
+
+    <!-- ══ LEFT COLUMN ══ -->
+    <div style="display:flex;flex-direction:column;gap:20px;">
+
+      <!-- PROFILE CARD -->
+      <div class="card">
+        <!-- Avatar + name -->
+        <div class="profile-avatar-wrap">
+          <div class="avatar">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <div class="avatar-upload" onclick="showToast('Загрузка фото...','blue')">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </div>
+          </div>
+          <div class="profile-name">Matthew Whilson</div>
+        </div>
+
+        <!-- Info rows -->
+        <div class="profile-rows">
+          <div class="profile-row">
+            <span class="row-label">Email</span>
+            <span class="row-value">matsvey.chuiko@gmail.com</span>
+          </div>
+          <div class="profile-row">
+            <span class="row-label">Телефон</span>
+            <span class="row-value">+7 970 791-02-18</span>
+          </div>
+          <div class="profile-row">
+            <span class="row-label">Скидка</span>
+            <span class="row-value"><span class="discount-badge">49%</span></span>
+          </div>
+          <div class="profile-row">
+            <span class="row-label">Страна</span>
+            <span class="row-value">🇷🇺 Россия</span>
+          </div>
+          <div class="profile-row">
+            <span class="row-label">Города</span>
+            <span class="row-value"><span class="city-tag">Москва</span></span>
+          </div>
+          <div class="profile-row">
+            <span class="row-label">Роль</span>
+            <span class="row-value">Администратор</span>
+          </div>
+          <div class="profile-row">
+            <span class="row-label">Реферальный код</span>
+            <span class="row-value" style="font-family:'Unbounded',sans-serif;font-size:0.78rem;font-weight:700;color:var(--accent);letter-spacing:0.06em;">FOTOBOT49</span>
+          </div>
+          <div class="profile-row">
+            <span class="row-label">Использование диска</span>
+            <div class="disk-row">
+              <span class="disk-num">3.2 GB</span>
+              <div class="disk-bar-wrap"><div class="disk-bar-fill" style="width:36%"></div></div>
+              <span class="disk-num">0.0 GB</span>
+              <button class="disk-info-btn" title="Подробнее">i</button>
+            </div>
+          </div>
+          <div class="profile-row">
+            <span class="row-label">Создан</span>
+            <span class="row-value muted">29.08.2022, 01:17:51</span>
+          </div>
+        </div>
+
+        <div class="profile-edit-wrap">
+          <button class="btn btn-primary" onclick="openEditModal()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Редактировать
+          </button>
+        </div>
+      </div>
+
+      <!-- SECURITY CARD -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Безопасность</span>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <input class="form-input" type="password" placeholder="Текущий пароль">
+          </div>
+          <div class="form-group">
+            <input class="form-input" type="password" placeholder="Новый пароль">
+          </div>
+          <div class="form-group">
+            <input class="form-input" type="password" placeholder="Повторите пароль">
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="changePassword()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+              Сменить пароль
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /left column -->
+
+    <!-- ══ RIGHT COLUMN ══ -->
+    <div style="display:flex;flex-direction:column;gap:20px;">
+
+      <!-- BALANCE CARD -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Баланс</span>
+        </div>
+        <div class="balance-card-body">
+          <div class="balance-amount">2 748.41</div>
+          <span class="balance-currency">RUB</span>
+          <div class="balance-actions">
+            <button class="btn btn-green" onclick="showToast('Переход к пополнению баланса...','blue')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Пополнить
+            </button>
+            <button class="btn btn-blue" onclick="showToast('История списаний...','blue')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              История
+            </button>
+            <button class="btn btn-danger" onclick="showToast('Редактирование баланса...','blue')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Редактировать
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- BRIEF INFO CARD -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Краткая информация</span>
+        </div>
+        <div class="card-body">
+          <p class="info-text">Всегда идти вперёд! Быть на позитиве! Точка Точка</p>
+          <button class="btn btn-green" style="width:100%;" onclick="openInfoModal()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Редактировать
+          </button>
+        </div>
+      </div>
+
+      <!-- PORTFOLIO CARD -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Портфолио</span>
+        </div>
+        <div class="card-body">
+          <div class="portfolio-empty">
+            <div class="portfolio-empty-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+
+            <button class="btn btn-green" style="width:100%;" onclick="openPortfolioModal()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Добавить
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- REFERRAL CARD -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Реферальная программа</span>
+        </div>
+        <div class="card-body">
+          <p class="info-text" style="margin-bottom:12px;">Приглашайте коллег — они получают скидку 10%, вы получаете 10% от суммы их тарифа на баланс.</p>
+          <div class="referral-wrap">
+            <span class="referral-code">FOTOBOT49</span>
+            <button class="referral-copy" onclick="copyCode()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Скопировать
+            </button>
+          </div>
+          <p class="referral-hint">Поделитесь кодом с коллегами-фотографами</p>
+        </div>
+      </div>
+
+    </div><!-- /right column -->
+
+  </div><!-- /profile-grid -->
+</main>
+</div>
+
+<!-- EDIT PROFILE MODAL -->
+<div class="modal-overlay" id="edit-modal" onclick="handleOverlayClick(event,'edit-modal')">
+  <div class="modal">
+    <div class="modal-hd">
+      <span class="modal-title">Редактировать профиль</span>
+      <button class="modal-close" onclick="closeModal('edit-modal')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-bd">
+      <div class="modal-row2">
+        <div class="modal-form-group"><label>Имя</label><input class="modal-input" type="text" value="Matthew"></div>
+        <div class="modal-form-group"><label>Фамилия</label><input class="modal-input" type="text" value="Whilson"></div>
+      </div>
+      <div class="modal-form-group"><label>Email</label><input class="modal-input" type="email" value="matsvey.chuiko@gmail.com"></div>
+      <div class="modal-form-group"><label>Телефон</label><input class="modal-input" type="tel" value="+7 970 791-02-18"></div>
+      <div class="modal-row2">
+        <div class="modal-form-group"><label>Страна</label><input class="modal-input" type="text" value="Россия"></div>
+        <div class="modal-form-group"><label>Город</label><input class="modal-input" type="text" value="Москва"></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-secondary" onclick="closeModal('edit-modal')">Отмена</button>
+      <button class="btn btn-primary" onclick="saveProfile()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Сохранить
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT INFO MODAL -->
+<div class="modal-overlay" id="info-modal" onclick="handleOverlayClick(event,'info-modal')">
+  <div class="modal">
+    <div class="modal-hd">
+      <span class="modal-title">Краткая информация</span>
+      <button class="modal-close" onclick="closeModal('info-modal')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-bd">
+      <div class="modal-form-group">
+        <label>Текст о себе</label>
+        <textarea class="modal-input" style="height:100px;resize:vertical;padding-top:10px;line-height:1.5;">Всегда идти вперёд! Быть на позитиве! Точка Точка</textarea>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-secondary" onclick="closeModal('info-modal')">Отмена</button>
+      <button class="btn btn-primary" onclick="saveInfo()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- PORTFOLIO MODAL -->
+<div class="modal-overlay" id="portfolio-modal" onclick="handleOverlayClick(event,'portfolio-modal')">
+  <div class="modal">
+    <div class="modal-hd">
+      <span class="modal-title">Добавить портфолио</span>
+      <button class="modal-close" onclick="closeModal('portfolio-modal')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-bd">
+      <div class="modal-form-group">
+        <label>Ссылка на портфолио</label>
+        <input class="modal-input" type="url" placeholder="https://your-portfolio.com">
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-secondary" onclick="closeModal('portfolio-modal')">Отмена</button>
+      <button class="btn btn-primary" onclick="savePortfolio()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Добавить</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+  // ─── SIDEBAR ───
+  function getSidebarWidth() {
+    const w = window.innerWidth;
+    if (w <= 1024) return 52;
+    if (w <= 1280) return 190;
+    return 220;
+  }
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const btn = document.getElementById('sidebar-toggle-btn');
+    const arrow = document.getElementById('toggle-arrow');
+    if (window.innerWidth <= 1024) {
+      const expanded = sidebar.classList.toggle('expanded');
+      btn.style.left = expanded ? '220px' : '0px';
+      arrow.style.transform = expanded ? '' : 'rotate(180deg)';
+    } else {
+      const collapsed = sidebar.classList.toggle('collapsed');
+      btn.style.left = collapsed ? '0px' : getSidebarWidth() + 'px';
+      arrow.style.transform = collapsed ? 'rotate(180deg)' : '';
+    }
+  }
+  window.addEventListener('resize', () => {
+    const sidebar = document.getElementById('sidebar');
+    const btn = document.getElementById('sidebar-toggle-btn');
+    if (window.innerWidth > 1024 && !sidebar.classList.contains('collapsed'))
+      btn.style.left = getSidebarWidth() + 'px';
+  });
+  (function() {
+    if (window.innerWidth <= 1024) {
+      document.getElementById('sidebar-toggle-btn').style.left = '0px';
+      document.getElementById('toggle-arrow').style.transform = 'rotate(180deg)';
+    }
+  })();
+
+  // ─── LANG ───
+  function toggleLang() { document.getElementById('lang-menu').classList.toggle('open'); document.querySelector('.lang-btn').classList.toggle('open'); }
+  function selectLang(f,c,e) { e.stopPropagation(); document.getElementById('lang-flag').textContent=f; document.getElementById('lang-code').textContent=c; document.querySelectorAll('.lang-item').forEach(i=>i.classList.remove('active')); e.currentTarget.classList.add('active'); document.getElementById('lang-menu').classList.remove('open'); document.querySelector('.lang-btn').classList.remove('open'); }
+  document.addEventListener('click', e => { const dd=document.getElementById('lang-dropdown'); if(dd&&!dd.contains(e.target)){document.getElementById('lang-menu').classList.remove('open');const b=document.querySelector('.lang-btn');if(b)b.classList.remove('open');} });
+
+  // ─── MODALS ───
+  function openEditModal() { document.getElementById('edit-modal').classList.add('open'); document.body.style.overflow='hidden'; }
+  function openInfoModal() { document.getElementById('info-modal').classList.add('open'); document.body.style.overflow='hidden'; }
+  function openPortfolioModal() { document.getElementById('portfolio-modal').classList.add('open'); document.body.style.overflow='hidden'; }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
+  function handleOverlayClick(e, id) { if(e.target===e.currentTarget) closeModal(id); }
+
+  function saveProfile() { closeModal('edit-modal'); showToast('Профиль сохранён', 'green'); }
+  function saveInfo() { closeModal('info-modal'); showToast('Информация обновлена', 'green'); }
+  function savePortfolio() { closeModal('portfolio-modal'); showToast('Портфолио добавлено', 'green'); }
+  function changePassword() { showToast('Пароль успешно изменён', 'green'); }
+  function copyCode() {
+    navigator.clipboard?.writeText('FOTOBOT49').catch(()=>{});
+    showToast('Реферальный код скопирован', 'blue');
+  }
+
+  // ─── TOAST ───
+  function showToast(message, type) {
+    const icons = { green: '<polyline points="20 6 9 17 4 12"/>', blue: '<path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.1 2.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.18 6.18l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>' };
+    const wrap = document.getElementById('toast-wrap');
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.innerHTML = `<div class="toast-icon ${type}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">${icons[type]||icons.green}</svg></div><span>${message}</span>`;
+    wrap.appendChild(t);
+    setTimeout(() => { t.style.animation = 'toastOut 0.3s ease forwards'; setTimeout(() => t.remove(), 300); }, 3000);
+  }
+</script>
+</body>
+</html>
